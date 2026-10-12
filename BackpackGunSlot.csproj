@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\ported-4.1\Spt41.Client.props" />
+
+  <PropertyGroup>
+    <AssemblyName>BackpackGunSlot</AssemblyName>
+    <RootNamespace>BackpackGunSlot</RootNamespace>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <Version>$(AssemblyVersion)</Version>
+    <Nullable>disable</Nullable>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="assets\smg.png" LogicalName="BackpackGunSlot.smg.png" />
+    <EmbeddedResource Include="assets\shotgun.png" LogicalName="BackpackGunSlot.shotgun.png" />
+  </ItemGroup>
+
+</Project>
