@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>BackpackGunSlot</AssemblyName>
+    <RootNamespace>BackpackGunSlot</RootNamespace>
+    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <Version>$(AssemblyVersion)</Version>
+    <Company>20fpsguy</Company>
+    <LangVersion>latest</LangVersion>
+    <Nullable>annotations</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <!-- Folder holding SPTarkov.Server.Core.dll and friends from an SPT 5.0 install:
+       dotnet build -c Release -p:SptServerDir="D:\SPT 5.0\SPT_Runtime\" -->
+  <PropertyGroup>
+    <SptServerDir Condition="'$(SptServerDir)' == ''">C:\SPT\SPT_Runtime\</SptServerDir>
+    <SptServerDir Condition="!HasTrailingSlash('$(SptServerDir)')">$(SptServerDir)\</SptServerDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="$(SptServerDir)SPTarkov.Server.Core.dll" Private="false" />
+    <Reference Include="$(SptServerDir)SPTarkov.DI.dll" Private="false" />
+    <Reference Include="$(SptServerDir)SPTarkov.Common.dll" Private="false" />
+    <Reference Include="$(SptServerDir)SemanticVersioning.dll" Private="false" />
+  </ItemGroup>
+
+</Project>
