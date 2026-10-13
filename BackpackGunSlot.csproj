@@ -1,20 +1,95 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\ported-4.1\Spt41.Client.props" />
-
   <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>BackpackGunSlot</AssemblyName>
     <RootNamespace>BackpackGunSlot</RootNamespace>
-    <AssemblyVersion>1.0.1</AssemblyVersion>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Version>$(AssemblyVersion)</Version>
+    <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <Deterministic>true</Deterministic>
+    <!-- Required by the publicizer for the private UI fields the patches touch. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <!-- Point this at an SPT 5.0 install: dotnet build -c Release -p:TarkovDir="D:\SPT 5.0\" -->
+  <PropertyGroup>
+    <TarkovDir Condition="'$(TarkovDir)' == ''">C:\SPT\</TarkovDir>
+    <TarkovDir Condition="!HasTrailingSlash('$(TarkovDir)')">$(TarkovDir)\</TarkovDir>
+    <TarkovManagedDir>$(TarkovDir)EscapeFromTarkov_Data\Managed\</TarkovManagedDir>
+    <TarkovBepInExCoreDir>$(TarkovDir)BepInEx\core\</TarkovBepInExCoreDir>
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="assets\smg.png" LogicalName="BackpackGunSlot.smg.png" />
-    <EmbeddedResource Include="assets\shotgun.png" LogicalName="BackpackGunSlot.shotgun.png" />
+    <Compile Include="src\**\*.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp" Publicize="true">
+      <HintPath>$(TarkovManagedDir)Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Comfort">
+      <HintPath>$(TarkovManagedDir)Comfort.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Comfort.Unity">
+      <HintPath>$(TarkovManagedDir)Comfort.Unity.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Sirenix.Serialization">
+      <HintPath>$(TarkovManagedDir)Sirenix.Serialization.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(TarkovManagedDir)Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(TarkovManagedDir)UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(TarkovManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(TarkovManagedDir)UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(TarkovManagedDir)UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(TarkovManagedDir)UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(TarkovBepInExCoreDir)0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>$(TarkovBepInExCoreDir)BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- The ghost icons are optional at runtime: without them SMG and shotgun slots fall back to the rifle ghost. -->
+  <ItemGroup>
+    <EmbeddedResource Include="assets\smg.png" LogicalName="BackpackGunSlot.smg.png" Condition="Exists('assets\smg.png')" />
+    <EmbeddedResource Include="assets\shotgun.png" LogicalName="BackpackGunSlot.shotgun.png" Condition="Exists('assets\shotgun.png')" />
+  </ItemGroup>
+
+  <Target Name="WarnMissingIcons" BeforeTargets="Build" Condition="!Exists('assets\smg.png') Or !Exists('assets\shotgun.png')">
+    <Warning Text="assets\smg.png or assets\shotgun.png is missing; SMG and shotgun slots will show the rifle ghost." />
+  </Target>
 
 </Project>
