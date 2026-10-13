@@ -1,14 +1,17 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EFT.InventoryLogic;
 using EFT.UI;
+using Il2CppInterop.Runtime.Attributes;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace BackpackGunSlot
 {
     // Hovering the empty slot lists every weapon class it takes. The ghost only shows the biggest.
-    internal sealed class BackpackSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    // The pointer interfaces are attached when the type is registered in Plugin.Load.
+    internal sealed class BackpackSlotTooltip : MonoBehaviour
     {
         private static readonly (string Id, string Name)[] Classes =
         {
@@ -28,6 +31,9 @@ namespace BackpackGunSlot
         private string _text;
         private bool _shown;
 
+        public BackpackSlotTooltip(IntPtr pointer) : base(pointer) { }
+
+        [HideFromIl2Cpp]
         internal void Bind(Slot slot)
         {
             _slot = slot;
@@ -45,7 +51,7 @@ namespace BackpackGunSlot
             if (_text == null || _slot?.ContainedItem != null) return;
             var tooltip = ItemUiContext.Instance?.Tooltip;
             if (tooltip == null) return;
-            tooltip.Show(_text, null, .5f);
+            tooltip.Show(_text, new Il2CppSystem.Nullable<Vector2>(), .5f, new Il2CppSystem.Nullable<float>());
             _shown = true;
         }
 

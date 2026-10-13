@@ -1,26 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <!-- SPT 5.0 runs EFT on IL2CPP with BepInEx 6, whose runtime is .NET 10. -->
+    <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>BackpackGunSlot</AssemblyName>
     <RootNamespace>BackpackGunSlot</RootNamespace>
-    <AssemblyVersion>1.1.0</AssemblyVersion>
+    <AssemblyVersion>2.0.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Version>$(AssemblyVersion)</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <Deterministic>true</Deterministic>
-    <!-- Required by the publicizer for the private UI fields the patches touch. -->
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- Point this at an SPT 5.0 install: dotnet build -c Release -p:TarkovDir="D:\SPT 5.0\" -->
+  <!-- Point this at an SPT 5.0 install that has been started once, so BepInEx has
+       generated BepInEx\interop: dotnet build -c Release -p:TarkovDir="D:\SPT 5.0\" -->
   <PropertyGroup>
     <TarkovDir Condition="'$(TarkovDir)' == ''">C:\SPT\</TarkovDir>
     <TarkovDir Condition="!HasTrailingSlash('$(TarkovDir)')">$(TarkovDir)\</TarkovDir>
-    <TarkovManagedDir>$(TarkovDir)EscapeFromTarkov_Data\Managed\</TarkovManagedDir>
-    <TarkovBepInExCoreDir>$(TarkovDir)BepInEx\core\</TarkovBepInExCoreDir>
+    <BepInExCoreDir>$(TarkovDir)BepInEx\core\</BepInExCoreDir>
+    <BepInExInteropDir>$(TarkovDir)BepInEx\interop\</BepInExInteropDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,58 +30,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Assembly-CSharp" Publicize="true">
-      <HintPath>$(TarkovManagedDir)Assembly-CSharp.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Comfort">
-      <HintPath>$(TarkovManagedDir)Comfort.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Comfort.Unity">
-      <HintPath>$(TarkovManagedDir)Comfort.Unity.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Sirenix.Serialization">
-      <HintPath>$(TarkovManagedDir)Sirenix.Serialization.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Unity.TextMeshPro">
-      <HintPath>$(TarkovManagedDir)Unity.TextMeshPro.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>$(TarkovManagedDir)UnityEngine.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(TarkovManagedDir)UnityEngine.CoreModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>$(TarkovManagedDir)UnityEngine.ImageConversionModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>$(TarkovManagedDir)UnityEngine.UI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.UIModule">
-      <HintPath>$(TarkovManagedDir)UnityEngine.UIModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="0Harmony">
-      <HintPath>$(TarkovBepInExCoreDir)0Harmony.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="BepInEx">
-      <HintPath>$(TarkovBepInExCoreDir)BepInEx.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+    <Reference Include="$(BepInExCoreDir)BepInEx.Core.dll" Private="false" />
+    <Reference Include="$(BepInExCoreDir)BepInEx.Unity.IL2CPP.dll" Private="false" />
+    <Reference Include="$(BepInExCoreDir)0Harmony.dll" Private="false" />
+    <Reference Include="$(BepInExCoreDir)Il2CppInterop.Common.dll" Private="false" />
+    <Reference Include="$(BepInExCoreDir)Il2CppInterop.Runtime.dll" Private="false" />
+    <Reference Include="$(BepInExInteropDir)*.dll" Private="false" />
   </ItemGroup>
 
   <!-- The ghost icons are optional at runtime: without them SMG and shotgun slots fall back to the rifle ghost. -->

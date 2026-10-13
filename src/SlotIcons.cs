@@ -1,5 +1,6 @@
 using System.IO;
 using EFT.Utilities;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine;
 
 namespace BackpackGunSlot
@@ -29,10 +30,14 @@ namespace BackpackGunSlot
             var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false)
             {
                 name = resource,
-                wrapMode = TextureWrapMode.Clamp
+                wrapMode = TextureWrapMode.Clamp,
+                // Only managed code references these, which the game's asset sweep cannot see.
+                hideFlags = HideFlags.DontUnloadUnusedAsset
             };
-            texture.LoadImage(memory.ToArray(), true);
-            return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(.5f, .5f));
+            texture.LoadImage(new Il2CppStructArray<byte>(memory.ToArray()), true);
+            var sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(.5f, .5f));
+            sprite.hideFlags = HideFlags.DontUnloadUnusedAsset;
+            return sprite;
         }
 
         internal static void Clear()

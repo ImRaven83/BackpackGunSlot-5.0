@@ -1,12 +1,12 @@
 using System;
-using System.Collections;
 using System.Linq;
-using System.Reflection;
 using EFT.InventoryLogic;
 using EFT.UI;
 using EFT.UI.DragAndDrop;
 using EFT.UI.Insurance;
 using HarmonyLib;
+using Il2CppInterop.Runtime.Attributes;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine;
 
 namespace BackpackGunSlot
@@ -49,9 +49,6 @@ namespace BackpackGunSlot
         private const string InjectedName = "BackpackGunSlot_ONPACK";
         private const float SlotGap = 8;
         private const float SmgLength = .7f;
-        private static readonly object BackpackKey = EquipmentSlot.Backpack;
-        private static readonly FieldInfo SlotViewsField =
-            AccessTools.Field(typeof(ContainersPanel), "_slotViews");
         private ContainersPanel _panel;
         private ItemContext _parentContext;
         private ItemContext _backpackContext;
@@ -67,8 +64,8 @@ namespace BackpackGunSlot
         private int _nextTabSearch;
         private GridView[] _grids;
         private int _nextGridSearch;
-        private UnityEngine.UI.ILayoutElement[] _rowElements;
-        private static readonly Vector3[] Corners = new Vector3[4];
+        private Component[] _rowElements;
+        private static Il2CppStructArray<Vector3> _corners;
         // Full hierarchy searches are too slow to repeat every frame.
         private const int SearchInterval = 30;
         private Slot _boundSlot;
@@ -76,6 +73,9 @@ namespace BackpackGunSlot
         private bool _running;
         private string _caption;
 
+        public BackpackSlotBinding(IntPtr pointer) : base(pointer) { }
+
+        [HideFromIl2Cpp]
         internal void Initialize(ContainersPanel panel, ItemContext context,
             InventoryEquipment equipment, InventoryController controller,
             EFT.SkillManager skills, InsuranceCompany insurance, bool inRaid)
@@ -112,14 +112,14 @@ namespace BackpackGunSlot
         private void Refresh()
         {
             var backpackSlot = _equipment?.GetSlot(EquipmentSlot.Backpack);
-            var pack = backpackSlot?.ContainedItem as CompoundItem;
+            var pack = backpackSlot?.ContainedItem?.TryCast<CompoundItem>();
             var wanted = Plugin.SlotName.Value?.Trim();
             Slot slot = null;
             if (Plugin.ModEnabled.Value && !string.IsNullOrEmpty(wanted) && pack?.Slots != null)
                 foreach (var candidate in pack.Slots)
                     if (candidate != null && candidate.Name == wanted) { slot = candidate; break; }
-            var map = SlotViewsField?.GetValue(_panel) as IDictionary;
-            var backpackView = map?[BackpackKey] as SlotView;
+            SlotView backpackView = null;
+            _panel._slotViews?.TryGetValue(EquipmentSlot.Backpack, out backpackView);
             // Respect the visibility of the inspected inventory (including restricted loot).
             if (backpackView == null || !backpackView.gameObject.activeInHierarchy ||
                 !_controller.IsAllowedToSeeSlot(backpackSlot, EquipmentSlot.Backpack)) slot = null;
@@ -129,7 +129,7 @@ namespace BackpackGunSlot
                 ReleaseView();
                 return;
             }
-            if (!ReferenceEquals(slot, _boundSlot) || _view == null)
+            if (!Il2CppUtil.Same(slot, _boundSlot) || _view == null)
             {
                 ReleaseView();
                 // Only use the weapon doll belonging to this panel's UI hierarchy.
@@ -143,7 +143,7 @@ namespace BackpackGunSlot
                 if (template == null) return; // Retry once the sibling doll is initialized.
                 var packIcon = backpackView._slotPlace;
                 if (packIcon == null) return;
-                var sourceSize = ((RectTransform)template.transform).rect.size;
+                var sourceSize = template.transform.Cast<RectTransform>().rect.size;
                 Vector2 size = sourceSize;
                 if (!holster)
                 {
@@ -152,8 +152,9 @@ namespace BackpackGunSlot
                         Mathf.Max(1, Mathf.Min(sourceSize.x, sourceSize.y));
                     size = new Vector2(width, gun == GunClass.Smg ? length * SmgLength : length);
                 }
-                _viewHost = new GameObject("BackpackGunSlot_Host", typeof(RectTransform),
-                    typeof(UnityEngine.UI.LayoutElement)).GetComponent<RectTransform>();
+                var hostObject = new GameObject("BackpackGunSlot_Host");
+                _viewHost = hostObject.AddComponent<RectTransform>();
+                hostObject.AddComponent<UnityEngine.UI.LayoutElement>();
                 _viewHost.SetParent(backpackView.transform, false);
                 _viewHost.SetAsLastSibling();
                 _viewHost.anchorMin = _viewHost.anchorMax = _viewHost.pivot = new Vector2(0, 1);
@@ -179,7 +180,7 @@ namespace BackpackGunSlot
                 _view.Show(slot, _backpackContext, _controller, ItemUiContext.Instance,
                     _skills, _insurance, !_inRaid);
                 _view.gameObject.name = InjectedName;
-                var rect = (RectTransform)_view.transform;
+                var rect = _view.transform.Cast<RectTransform>();
                 rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0, 1);
                 rect.anchoredPosition = Vector2.zero;
                 rect.localScale = Vector3.one;
@@ -233,16 +234,17 @@ namespace BackpackGunSlot
 
         // Re-run every frame: the grids and picture move when the panel relayouts.
         // Right of the grids when that fits on screen, else the column under the picture.
+        [HideFromIl2Cpp]
         private void PlaceSlot(SlotView backpackView)
         {
-            var parent = (RectTransform)_viewHost.parent;
-            var corners = Corners;
+            var parent = _viewHost.parent.Cast<RectTransform>();
+            var corners = _corners ??= new Il2CppStructArray<Vector3>(4);
             // Positions below are for our header's top. The holster prefab draws its
             // header above its own rect, the weapon prefab inside it.
             float headerRise = 0;
             if (_view._slotHeader != null)
             {
-                ((RectTransform)_view._slotHeader.transform).GetWorldCorners(corners);
+                _view._slotHeader.transform.Cast<RectTransform>().GetWorldCorners(corners);
                 headerRise = parent.InverseTransformPoint(corners[1]).y - _viewHost.localPosition.y;
             }
             backpackView._slotPlace.GetWorldCorners(corners);
@@ -259,7 +261,7 @@ namespace BackpackGunSlot
             foreach (var grid in _grids)
             {
                 if (grid == null || !grid.gameObject.activeInHierarchy) continue;
-                ((RectTransform)grid.transform).GetWorldCorners(corners);
+                grid.transform.Cast<RectTransform>().GetWorldCorners(corners);
                 gridsRight = Mathf.Max(gridsRight, parent.InverseTransformPoint(corners[2]).x);
             }
             if (gridsRight > float.MinValue && _clip != null)
@@ -271,7 +273,7 @@ namespace BackpackGunSlot
                 {
                     // Line the ON PACK header up with the BACKPACK header.
                     var header = backpackView._slotHeader != null
-                        ? (RectTransform)backpackView._slotHeader.transform : backpackView._slotPlace;
+                        ? backpackView._slotHeader.transform.Cast<RectTransform>() : backpackView._slotPlace;
                     header.GetWorldCorners(corners);
                     position = new Vector2(x, parent.InverseTransformPoint(corners[1]).y);
                 }
@@ -284,17 +286,20 @@ namespace BackpackGunSlot
             // Our element outranks the row's own layout, so carry its height over
             // or tall grids get squashed into the next row.
             float needed = parent.rect.yMax - (position.y - _viewHost.sizeDelta.y);
-            _rowElements ??= backpackView.GetComponents<UnityEngine.UI.ILayoutElement>()
-                .Where(e => !ReferenceEquals(e, _rowLayout)).ToArray();
-            foreach (var element in _rowElements)
+            _rowElements ??= backpackView.GetComponents<Component>()
+                .Where(c => !Il2CppUtil.Same(c, _rowLayout) && c.TryCast<UnityEngine.UI.ILayoutElement>() != null)
+                .ToArray();
+            foreach (var component in _rowElements)
             {
-                if (element is Behaviour { enabled: false } || element is UnityEngine.Object o && o == null) continue;
+                if (component == null || component.TryCast<Behaviour>() is { enabled: false }) continue;
+                var element = component.Cast<UnityEngine.UI.ILayoutElement>();
                 needed = Mathf.Max(needed, Mathf.Max(element.minHeight, element.preferredHeight));
             }
             if (Mathf.Abs(_rowLayout.minHeight - needed) > .5f)
                 _rowLayout.minHeight = needed;
         }
 
+        [HideFromIl2Cpp]
         private static void ConfigurePortraitBackground(SlotView view, Vector2 size)
         {
             if (view.SlotBackImage == null) return;
@@ -311,6 +316,7 @@ namespace BackpackGunSlot
         }
 
         // The doll doesn't change while the panel is open, so search once and keep it.
+        [HideFromIl2Cpp]
         private EquipmentTab FindEquipmentTab()
         {
             if (_tab != null || Time.frameCount < _nextTabSearch) return _tab;
@@ -409,6 +415,8 @@ namespace BackpackGunSlot
 
     internal sealed class BackpackSlotMarker : MonoBehaviour
     {
+        public BackpackSlotMarker(IntPtr pointer) : base(pointer) { }
+
         // Weapon slots show the gun standing up; the holster copy keeps it flat.
         internal bool Vertical;
     }

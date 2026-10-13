@@ -1,4 +1,3 @@
-using System.Reflection;
 using EFT.InventoryLogic;
 using EFT.UI.DragAndDrop;
 using HarmonyLib;
@@ -11,13 +10,11 @@ namespace BackpackGunSlot
     [HarmonyPatch(typeof(SlotView), nameof(SlotView.SetupItemView))]
     internal static class BackpackWeaponItemRotationPatch
     {
-        private static readonly FieldInfo ItemViewField = AccessTools.Field(typeof(SlotView), "ItemView");
-
         [HarmonyPostfix]
         private static void Postfix(SlotView __instance)
         {
             if (__instance.GetComponent<BackpackSlotMarker>()?.Vertical != true) return;
-            var itemView = ItemViewField.GetValue(__instance) as ItemView;
+            var itemView = __instance.ItemView;
             if (itemView == null) return;
             itemView.ItemRotation = ItemRotation.Vertical;
             __instance.ScaleItem(__instance._slotPlace.rect.size);

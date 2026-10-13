@@ -3,6 +3,7 @@ using EFT.InventoryLogic;
 using EFT.UI;
 using EFT.UI.DragAndDrop;
 using HarmonyLib;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 
 namespace BackpackGunSlot
 {
@@ -20,7 +21,8 @@ namespace BackpackGunSlot
         {
             if (__instance._specSlotHeader != null)
                 __instance._specSlotHeader.gameObject.SetActive(true);
-            if (__0 is not CompoundItem pack || !pack.Slots.Any(BackpackWeaponSlot.Matches))
+            var pack = __0?.TryCast<CompoundItem>();
+            if (pack?.Slots == null || !pack.Slots.Any(BackpackWeaponSlot.Matches))
                 return true;
             // The equipped backpack binding draws this slot with the ON BACK prefab.
             // Do not also create vanilla's small SPEC slot for the same address.
@@ -38,7 +40,8 @@ namespace BackpackGunSlot
         [HarmonyPostfix]
         private static void Postfix(SearchableSlotView __instance, Item __0)
         {
-            if (__0 is not CompoundItem pack || !pack.Slots.Any(BackpackWeaponSlot.Matches) ||
+            var pack = __0?.TryCast<CompoundItem>();
+            if (pack?.Slots == null || !pack.Slots.Any(BackpackWeaponSlot.Matches) ||
                 __instance._specSlotsPanel == null) return;
             foreach (var view in __instance._specSlotsPanel.GetComponentsInChildren<SlotView>(true))
             {
@@ -52,17 +55,17 @@ namespace BackpackGunSlot
     }
 
     [HarmonyPatch(typeof(ContainedGridsView), nameof(ContainedGridsView.Show), typeof(CompoundItem),
-        typeof(ItemContext), typeof(GridView[]), typeof(SlotView[]), typeof(ItemController),
-        typeof(FilterPanel), typeof(ItemUiContext), typeof(bool))]
+        typeof(ItemContext), typeof(Il2CppReferenceArray<GridView>), typeof(Il2CppReferenceArray<SlotView>),
+        typeof(ItemController), typeof(FilterPanel), typeof(ItemUiContext), typeof(bool))]
     internal static class LayoutPresetSlotsPatch
     {
         // The Terraframe layout ships a preset slot view that points at nothing. Vanilla packs
         // have no slots so it never gets used, but ours would be paired with it and throw.
         [HarmonyPrefix]
-        private static void Prefix(ref SlotView[] __3)
+        private static void Prefix(ref Il2CppReferenceArray<SlotView> __3)
         {
             if (__3 != null && __3.Any(v => v == null))
-                __3 = __3.Where(v => v != null).ToArray();
+                __3 = new Il2CppReferenceArray<SlotView>(__3.Where(v => v != null).ToArray());
         }
     }
 
@@ -72,8 +75,8 @@ namespace BackpackGunSlot
         [HarmonyPrefix]
         private static bool Prefix(ItemSpecificationPanel __instance, CompoundItem __0)
         {
-            if (__0 == null || !__0.Slots.Any(BackpackWeaponSlot.Matches) ||
-                !__0.AllSlots.All(BackpackWeaponSlot.Matches)) return true;
+            if (__0?.Slots == null || !__0.Slots.Any(BackpackWeaponSlot.Matches) ||
+                !Il2CppUtil.Each(__0.AllSlots).All(BackpackWeaponSlot.Matches)) return true;
             // This is storage, not a weapon attachment. The attachment renderer has
             // no icon for the custom slot name and otherwise shows a solid white tile.
             __instance._modsPanel.gameObject.SetActive(false);
