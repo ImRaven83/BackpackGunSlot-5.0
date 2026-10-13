@@ -51,6 +51,21 @@ namespace BackpackGunSlot
         }
     }
 
+    [HarmonyPatch(typeof(ContainedGridsView), nameof(ContainedGridsView.Show), typeof(CompoundItem),
+        typeof(ItemContext), typeof(GridView[]), typeof(SlotView[]), typeof(ItemController),
+        typeof(FilterPanel), typeof(ItemUiContext), typeof(bool))]
+    internal static class LayoutPresetSlotsPatch
+    {
+        // The Terraframe layout ships a preset slot view that points at nothing. Vanilla packs
+        // have no slots so it never gets used, but ours would be paired with it and throw.
+        [HarmonyPrefix]
+        private static void Prefix(ref SlotView[] __3)
+        {
+            if (__3 != null && __3.Any(v => v == null))
+                __3 = __3.Where(v => v != null).ToArray();
+        }
+    }
+
     [HarmonyPatch(typeof(ItemSpecificationPanel), nameof(ItemSpecificationPanel.CreateModSlots))]
     internal static class BackpackInspectionSlotsPatch
     {
