@@ -4,7 +4,6 @@ using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
-using UnityEngine.EventSystems;
 
 namespace BackpackGunSlot
 {
@@ -14,7 +13,7 @@ namespace BackpackGunSlot
     {
         public const string PluginGuid = "com.20fpsguy.backpackgunslot";
         public const string PluginName = "BackpackGunSlot";
-        public const string PluginVersion = "2.0.0";
+        public const string PluginVersion = "2.0.1";
 
         internal new static ManualLogSource Log;
 
@@ -44,10 +43,7 @@ namespace BackpackGunSlot
             // Our components live on IL2CPP game objects, so the runtime has to know their types.
             ClassInjector.RegisterTypeInIl2Cpp<BackpackSlotMarker>();
             ClassInjector.RegisterTypeInIl2Cpp<BackpackSlotBinding>();
-            ClassInjector.RegisterTypeInIl2Cpp<BackpackSlotTooltip>(new RegisterTypeOptions
-            {
-                Interfaces = new[] { typeof(IPointerEnterHandler), typeof(IPointerExitHandler) }
-            });
+            ClassInjector.RegisterTypeInIl2Cpp<BackpackSlotTooltip>();
 
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);

@@ -17,13 +17,13 @@ namespace BackpackGunSlot
         [HarmonyPostfix]
         private static void Postfix(ContainersPanel __instance, ItemContext __0,
             InventoryEquipment __1, InventoryController __2, EFT.SkillManager __3,
-            InsuranceCompany __4, bool __5)
+            InsuranceCompany __4)
         {
             try
             {
                 var binding = __instance.GetComponent<BackpackSlotBinding>()
                     ?? __instance.gameObject.AddComponent<BackpackSlotBinding>();
-                binding.Initialize(__instance, __0, __1, __2, __3, __4, __5);
+                binding.Initialize(__instance, __0, __1, __2, __3, __4);
             }
             catch (Exception e)
             {
@@ -69,7 +69,6 @@ namespace BackpackGunSlot
         // Full hierarchy searches are too slow to repeat every frame.
         private const int SearchInterval = 30;
         private Slot _boundSlot;
-        private bool _inRaid;
         private bool _running;
         private string _caption;
 
@@ -78,7 +77,7 @@ namespace BackpackGunSlot
         [HideFromIl2Cpp]
         internal void Initialize(ContainersPanel panel, ItemContext context,
             InventoryEquipment equipment, InventoryController controller,
-            EFT.SkillManager skills, InsuranceCompany insurance, bool inRaid)
+            EFT.SkillManager skills, InsuranceCompany insurance)
         {
             Shutdown();
             RemoveOrphans(panel);
@@ -88,7 +87,6 @@ namespace BackpackGunSlot
             _controller = controller;
             _skills = skills;
             _insurance = insurance;
-            _inRaid = inRaid;
             _running = true;
             RefreshSafely();
         }
@@ -177,8 +175,10 @@ namespace BackpackGunSlot
                     DestroyImmediate(icon.gameObject);
                 _view.Start();
                 _backpackContext = _parentContext.CreateChild(pack);
+                // No header click: it opens the equip-item picker, which only understands
+                // equipment slots and throws for a backpack slot.
                 _view.Show(slot, _backpackContext, _controller, ItemUiContext.Instance,
-                    _skills, _insurance, !_inRaid);
+                    _skills, _insurance, false);
                 _view.gameObject.name = InjectedName;
                 var rect = _view.transform.Cast<RectTransform>();
                 rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0, 1);

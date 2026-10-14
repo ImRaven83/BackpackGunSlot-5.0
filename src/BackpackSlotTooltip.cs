@@ -5,12 +5,12 @@ using EFT.InventoryLogic;
 using EFT.UI;
 using Il2CppInterop.Runtime.Attributes;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace BackpackGunSlot
 {
     // Hovering the empty slot lists every weapon class it takes. The ghost only shows the biggest.
-    // The pointer interfaces are attached when the type is registered in Plugin.Load.
+    // Hover is polled rather than received through the pointer interfaces: Unity cannot
+    // dispatch those to an injected IL2CPP type and throws on every enter and exit.
     internal sealed class BackpackSlotTooltip : MonoBehaviour
     {
         private static readonly (string Id, string Name)[] Classes =
@@ -30,6 +30,8 @@ namespace BackpackGunSlot
         private Slot _slot;
         private string _text;
         private bool _shown;
+        private bool _hovered;
+        private Canvas _canvas;
 
         public BackpackSlotTooltip(IntPtr pointer) : base(pointer) { }
 
@@ -45,7 +47,25 @@ namespace BackpackGunSlot
             _text = names.Count == 0 ? null : "Fits: " + string.Join(", ", names);
         }
 
-        public void OnPointerEnter(PointerEventData eventData)
+        private void Update()
+        {
+            bool hovered = IsPointerOver();
+            if (hovered == _hovered) return;
+            _hovered = hovered;
+            if (hovered) Show();
+            else Hide();
+        }
+
+        private bool IsPointerOver()
+        {
+            if (_canvas == null) _canvas = GetComponentInParent<Canvas>()?.rootCanvas;
+            if (_canvas == null) return false;
+            var camera = _canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : _canvas.worldCamera;
+            return RectTransformUtility.RectangleContainsScreenPoint(
+                transform.Cast<RectTransform>(), Input.mousePosition, camera);
+        }
+
+        private void Show()
         {
             // A filled slot shows the item's own tooltip instead.
             if (_text == null || _slot?.ContainedItem != null) return;
@@ -55,9 +75,11 @@ namespace BackpackGunSlot
             _shown = true;
         }
 
-        public void OnPointerExit(PointerEventData eventData) => Hide();
-
-        private void OnDisable() => Hide();
+        private void OnDisable()
+        {
+            _hovered = false;
+            Hide();
+        }
 
         private void Hide()
         {
